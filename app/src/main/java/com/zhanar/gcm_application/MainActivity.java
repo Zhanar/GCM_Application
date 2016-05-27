@@ -19,6 +19,7 @@ import android.widget.TextView;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 
+import org.apache.commons.io.IOUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -88,57 +89,61 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
+        TextView tvMsg = (TextView) findViewById(R.id.message);
+        final String msg = tvMsg.getText().toString();
         Button btnSendMessage = (Button) findViewById(R.id.sendMessage);
-        btnSendMessage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
-                    @Override
-                    protected Void doInBackground(Void... params) {
-                        try {
-                            TextView tvMsg = (TextView) findViewById(R.id.message);
-                            String msg = tvMsg.getText().toString();
-                            if (msg.length() != 0) {
-                                JSONObject jGcmData = new JSONObject();
-                                JSONObject jData = new JSONObject();
-                                jData.put("message", msg);
+        if (btnSendMessage != null) {
+            btnSendMessage.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
+                        @Override
+                        protected Void doInBackground(Void... params) {
+                            try {
 
-                                jGcmData.put("to", "/topics/global");
-                                jGcmData.put("data", jData);
 
-                                URL url = new URL("https://android.googleapis.com/gcm/send");
-                                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                                conn.setRequestProperty("Authorization", "key=" + API_KEY);
-                                conn.setRequestProperty("Content-Type", "application/json");
-                                conn.setRequestMethod("POST");
-                                conn.setDoOutput(true);
+                                if (msg.length() != 0) {
+                                    JSONObject jGcmData = new JSONObject();
+                                    JSONObject jData = new JSONObject();
+                                    jData.put("message", msg);
 
-                                OutputStream outputStream = conn.getOutputStream();
-                                outputStream.write(jGcmData.toString().getBytes());
+                                    jGcmData.put("to", "/topics/global");
+                                    jGcmData.put("data", jData);
 
-                                InputStream inputStream = conn.getInputStream();
-                                String resp = IOUtils.toString(inputStream);
-                                System.out.println(resp);
-                                System.out.println("Check your device/emulator for notification or logcat for " + "confirmation of the receipt of the GCM message.");
+                                    URL url = new URL("https://android.googleapis.com/gcm/send");
+                                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                                    conn.setRequestProperty("Authorization", "key=" + API_KEY);
+                                    conn.setRequestProperty("Content-Type", "application/json");
+                                    conn.setRequestMethod("POST");
+                                    conn.setDoOutput(true);
+
+                                    OutputStream outputStream = conn.getOutputStream();
+                                    outputStream.write(jGcmData.toString().getBytes());
+
+                                    InputStream inputStream = conn.getInputStream();
+                                    String resp = IOUtils.toString(inputStream);
+                                    System.out.println(resp);
+                                    System.out.println("Check your device/emulator for notification or logcat for " + "confirmation of the receipt of the GCM message.");
+                                }
+                            } catch (IOException e) {
+                                System.out.println("Unable to send GCM message.");
+                                System.out.println("Please ensure that API_KEY has been replaced by the server " + "API key, and that the device's registration token is correct (if specified).");
+                                e.printStackTrace();
+                            } catch (JSONException e) {
+                                e.printStackTrace();
                             }
-                        } catch (IOException e) {
-                            System.out.println("Unable to send GCM message.");
-                            System.out.println("Please ensure that API_KEY has been replaced by the server " + "API key, and that the device's registration token is correct (if specified).");
-                            e.printStackTrace();
-                        } catch (JSONException e) {
-                            e.printStackTrace();
+                            return null;
                         }
-                        return null;
-                    }
-                };
-                task.execute();
-            }
-        });
+                    };
+                    task.execute();
+                }
+            });
+        }
 
         // Message history
-        ArrayList<messageInfo> results = DataController.getInstance(MainActivity.this).getMessages();
+        ArrayList<MessageInfo> results = DataController.getInstance(MainActivity.this).getMessages();
         ArrayList<String> items = new ArrayList<>();
-        for (messageInfo item : results) {
+        for (MessageInfo item : results) {
             items.add(item.getText());
         }
 
